@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 4%;
+    --foreground: 220 14% 93%;
+    --card: 240 8% 7%;
+    --card-foreground: 220 14% 93%;
+    --popover: 240 8% 6%;
+    --popover-foreground: 220 14% 93%;
+    --primary: 258 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 220 14% 88%;
+    --muted: 240 6% 12%;
+    --muted-foreground: 220 9% 58%;
+    --accent: 258 40% 18%;
+    --accent-foreground: 258 90% 85%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 16%;
+    --input: 240 6% 16%;
+    --ring: 258 90% 66%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 50% -10%, hsl(258 90% 66% / 0.12), transparent),
+      radial-gradient(ellipse 40% 30% at 90% 10%, hsl(190 90% 60% / 0.06), transparent);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    @apply bg-primary/30;
+  }
+}
+
+@layer components {
+  /* Frosted-glass panel used across cards, sidebars and floating surfaces */
+  .glass {
+    @apply border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl;
+  }
+
+  .glass-strong {
+    @apply border border-white/[0.08] bg-zinc-900/70 backdrop-blur-2xl;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent;
+  }
+
+  .glow {
+    box-shadow: 0 0 60px -12px hsl(258 90% 66% / 0.45);
+  }
+}
+
+/* Slim scrollbars that match the theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(240 6% 20%);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(240 6% 28%);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

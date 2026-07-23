@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Builds
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+*.tsbuildinfo
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env*.local
+!.env.example
+
+# Data & media (runtime artifacts)
+backend/data/
+output/
+*.db
+*.sqlite3
+
+# Credentials
+backend/credentials/
+token.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

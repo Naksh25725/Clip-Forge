@@ -1,0 +1,12 @@
+# Normalize line endings: LF in the repo, native on checkout.
+* text=auto eol=lf
+
+# Windows scripts must stay CRLF or they break when double-clicked.
+*.bat text eol=crlf
+
+# Binary assets — never touch.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

@@ -1,0 +1,40 @@
+services:
+  backend:
+    build: ./backend
+    container_name: clipforge-backend
+    ports:
+      - "8000:8000"
+    environment:
+      CLIPFORGE_DATA_DIR: /data
+      CLIPFORGE_DATABASE_URL: sqlite+aiosqlite:////data/clipforge.db
+      CLIPFORGE_CORS_ORIGINS: http://localhost:3000
+      CLIPFORGE_WHISPER_ENABLED: ${CLIPFORGE_WHISPER_ENABLED:-true}
+      CLIPFORGE_WHISPER_MODEL: ${CLIPFORGE_WHISPER_MODEL:-base}
+      CLIPFORGE_GROQ_MODEL: ${CLIPFORGE_GROQ_MODEL:-llama-3.3-70b-versatile}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/drive/callback}
+    volumes:
+      - clipforge-data:/data
+      # Saving parts to a folder on your machine: point this at it, then use
+      # /output as the folder path inside the app.
+      - ${CLIPFORGE_OUTPUT_DIR:-./output}:/output
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    container_name: clipforge-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  clipforge-data:
