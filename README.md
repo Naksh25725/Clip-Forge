@@ -75,8 +75,9 @@ cd frontend && npm install && cd ..
 start.bat
 ```
 
-A browser tab opens at **http://localhost:3000**. To watch progress anytime,
-double-click **`watch.bat`**. Close the engine/app windows to stop.
+One window opens showing live progress, and a browser tab opens at
+**http://localhost:3000**. That single window runs everything — **close it (or
+press Ctrl+C) to stop ClipForge completely.** Nothing is left running.
 
 ## Run it (Docker, any OS)
 
