@@ -33,14 +33,32 @@ async def _compress_chunk(src: Path, dst: Path, start: float, duration: float) -
     from . import ffmpeg
 
     await ffmpeg._run(  # noqa: SLF001 — same package, deliberate reuse
-        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-        "-ss", f"{start:.3f}", "-t", f"{duration:.3f}", "-i", str(src),
-        "-vn", "-ac", "1", "-ar", "16000", "-b:a", "32k", str(dst),
+        "ffmpeg",
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-ss",
+        f"{start:.3f}",
+        "-t",
+        f"{duration:.3f}",
+        "-i",
+        str(src),
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-b:a",
+        "32k",
+        str(dst),
         timeout=1800,
     )
 
 
-async def _transcribe_chunk(client: httpx.AsyncClient, path: Path, offset: float) -> list[Segment]:
+async def _transcribe_chunk(
+    client: httpx.AsyncClient, path: Path, offset: float
+) -> list[Segment]:
     settings = get_settings()
     response = await client.post(
         TRANSCRIBE_URL,
@@ -111,5 +129,9 @@ async def transcribe(
     if on_progress:
         on_progress(1.0, "Cloud transcription finished")
     all_segments.sort(key=lambda s: s.start)
-    logger.info("Cloud transcription: %d segments from %d chunk(s)", len(all_segments), chunk_count)
+    logger.info(
+        "Cloud transcription: %d segments from %d chunk(s)",
+        len(all_segments),
+        chunk_count,
+    )
     return all_segments

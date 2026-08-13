@@ -50,9 +50,7 @@ async def _update_job(job_id: str, progress: float, message: str) -> None:
 
 
 def _slice_transcript(segments, start: float, end: float) -> str:
-    return " ".join(
-        s.text for s in segments if s.end > start and s.start < end
-    ).strip()
+    return " ".join(s.text for s in segments if s.end > start and s.start < end).strip()
 
 
 async def render_one_part(part_id: str) -> None:
@@ -82,16 +80,23 @@ async def render_one_part(part_id: str) -> None:
 
     subtitle_path = None
     if sub_events and subtitles.has_subtitle_lines(sub_events):
-        out_w, out_h = ffmpeg.output_dimensions(source_height, options.resolution, options.aspect, video.width)
+        out_w, out_h = ffmpeg.output_dimensions(
+            source_height, options.resolution, options.aspect, video.width
+        )
         subtitle_path = subtitles.build_ass(
-            sub_events, out_w, out_h,
+            sub_events,
+            out_w,
+            out_h,
             settings.parts_dir / part_id[:2] / f"{part_id}.ass",
             y=options.subtitle_y,
         )
 
     try:
         await ffmpeg.render_part(
-            src, out_path, start, end,
+            src,
+            out_path,
+            start,
+            end,
             overlays=overlays,
             subtitle_path=subtitle_path,
             aspect=options.aspect,
@@ -101,7 +106,9 @@ async def render_one_part(part_id: str) -> None:
             resolution=options.resolution,
             fmt=options.format,
         )
-        await ffmpeg.make_thumbnail(out_path, thumb_path, at=min(1.0, (end - start) / 2))
+        await ffmpeg.make_thumbnail(
+            out_path, thumb_path, at=min(1.0, (end - start) / 2)
+        )
         async with SessionLocal() as db:
             part = await db.get(Part, part_id)
             part.path = str(out_path)
@@ -191,7 +198,9 @@ async def _transcribe_source(
                 raise
             if job_id:
                 await _update_job(
-                    job_id, progress_from, "Cloud unavailable — transcribing on this device"
+                    job_id,
+                    progress_from,
+                    "Cloud unavailable — transcribing on this device",
                 )
 
     on_progress = None
@@ -223,11 +232,18 @@ async def _plan_best_clips(
 
     try:
         transcript_segments = await _transcribe_source(
-            src, wav, job_id=job_id, progress_from=5, progress_to=18,
-            mode=options.transcription, duration=duration,
+            src,
+            wav,
+            job_id=job_id,
+            progress_from=5,
+            progress_to=18,
+            mode=options.transcription,
+            duration=duration,
         )
     except Exception:  # noqa: BLE001 — fall back to signal-only scoring
-        logger.warning("Transcription unavailable — scoring on audio/visual signal", exc_info=True)
+        logger.warning(
+            "Transcription unavailable — scoring on audio/visual signal", exc_info=True
+        )
         if not wav.exists():
             try:
                 await ffmpeg.extract_audio_wav(src, wav)
@@ -241,7 +257,9 @@ async def _plan_best_clips(
     except ffmpeg.FFmpegError:
         logger.warning("Scene detection failed; continuing without visual signal")
 
-    candidates = viral.build_candidates(duration, float(options.clip_length), transcript_segments)
+    candidates = viral.build_candidates(
+        duration, float(options.clip_length), transcript_segments
+    )
     await _update_job(
         job_id,
         24,
@@ -289,9 +307,13 @@ async def run_split_job(job_id: str) -> None:
             if options.ai_titles or options.subtitles:
                 try:
                     transcript_segments = await _transcribe_source(
-                        src, workdir / "audio.wav",
-                        job_id=job_id, progress_from=4, progress_to=10,
-                        mode=options.transcription, duration=duration,
+                        src,
+                        workdir / "audio.wav",
+                        job_id=job_id,
+                        progress_from=4,
+                        progress_to=10,
+                        mode=options.transcription,
+                        duration=duration,
                     )
                 except Exception:  # noqa: BLE001 — optional, never fatal
                     logger.warning("Transcription unavailable", exc_info=True)
@@ -313,7 +335,8 @@ async def run_split_job(job_id: str) -> None:
                 end_time=round(end, 3),
                 duration=round(end - start, 3),
                 transcript=(
-                    candidate.text if candidate
+                    candidate.text
+                    if candidate
                     else _slice_transcript(transcript_segments, start, end)
                 ),
                 subtitles=(

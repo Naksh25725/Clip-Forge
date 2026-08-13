@@ -26,7 +26,9 @@ def _ass_time(seconds: float) -> str:
 
 
 def _wrap(text: str) -> str:
-    lines = textwrap.wrap(text.strip(), width=_MAX_CHARS_PER_LINE, max_lines=2, placeholder="…")
+    lines = textwrap.wrap(
+        text.strip(), width=_MAX_CHARS_PER_LINE, max_lines=2, placeholder="…"
+    )
     return "\\N".join(lines)  # \N is a hard line break in ASS
 
 
@@ -109,5 +111,7 @@ def slice_segments(segments, start: float, end: float) -> list[dict]:
         rel_end = min(seg.end - start, clip_length)
         if rel_end - rel_start < 0.05:
             continue
-        out.append({"start": round(rel_start, 3), "end": round(rel_end, 3), "text": seg.text})
+        out.append(
+            {"start": round(rel_start, 3), "end": round(rel_end, 3), "text": seg.text}
+        )
     return out

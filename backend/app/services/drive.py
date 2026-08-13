@@ -4,7 +4,6 @@ The google-* client libraries are synchronous, so every call runs in a thread.
 """
 
 import asyncio
-import io
 import json
 import logging
 from collections.abc import Callable
@@ -32,6 +31,15 @@ def is_configured() -> bool:
 
 def is_connected() -> bool:
     return _token_path().exists()
+
+
+try:
+    from google.auth.exceptions import GoogleAuthError
+    from googleapiclient.errors import Error as ApiError
+
+    DRIVE_EXCEPTIONS = (ApiError, GoogleAuthError, ImportError, ValueError, OSError)
+except ImportError:
+    DRIVE_EXCEPTIONS = (ImportError, ValueError, OSError)
 
 
 def _client_config() -> dict:
@@ -158,7 +166,9 @@ async def file_metadata(file_id: str) -> tuple[str, str]:
     return await asyncio.to_thread(_file_metadata_sync, file_id)
 
 
-def _download_sync(file_id: str, dest: str, on_progress: Callable[[float], None] | None) -> None:
+def _download_sync(
+    file_id: str, dest: str, on_progress: Callable[[float], None] | None
+) -> None:
     from googleapiclient.http import MediaIoBaseDownload
 
     request = _service().files().get_media(fileId=file_id)
@@ -200,7 +210,11 @@ def _upload_sync(
 
 
 async def upload_file(
-    path: Path, name: str, folder_id: str = "root",
+    path: Path,
+    name: str,
+    folder_id: str = "root",
     on_progress: Callable[[float], None] | None = None,
 ) -> str:
-    return await asyncio.to_thread(_upload_sync, str(path), name, folder_id, on_progress)
+    return await asyncio.to_thread(
+        _upload_sync, str(path), name, folder_id, on_progress
+    )

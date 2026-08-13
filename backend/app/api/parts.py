@@ -32,7 +32,9 @@ async def list_parts(job_id: str = "", db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{part_id}", response_model=PartOut)
-async def update_part(part_id: str, payload: PartUpdate, db: AsyncSession = Depends(get_db)):
+async def update_part(
+    part_id: str, payload: PartUpdate, db: AsyncSession = Depends(get_db)
+):
     """Rename a part. Changing `label` or `overlays` re-renders it."""
     part = await _get_part(part_id, db)
 
