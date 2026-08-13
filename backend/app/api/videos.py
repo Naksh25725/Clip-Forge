@@ -102,7 +102,7 @@ async def _download_task(video_id: str, url: str) -> None:
     try:
         path, name = await download(url, settings.uploads_dir, video_id, on_progress)
         await _finalize(video_id, path, name)
-    except (DownloadError, ffmpeg.FFmpegError, Exception) as exc:  # noqa: BLE001
+    except (DownloadError, ffmpeg.FFmpegError) as exc:
         logger.exception("Link import failed for %s", video_id)
         async with SessionLocal() as db:
             video = await db.get(Video, video_id)
