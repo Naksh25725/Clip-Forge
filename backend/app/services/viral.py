@@ -10,6 +10,7 @@ Every tier produces a 0-100 score and a sentence explaining it, so the UI can
 always show the user why a clip was picked.
 """
 
+import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
@@ -197,7 +198,7 @@ async def score_candidates(
     energy = [0.0] * len(candidates)
     if wav_path and wav_path.exists():
         try:
-            energy = _normalize(ffmpeg.rms_by_window(wav_path, windows))
+            energy = _normalize(await asyncio.to_thread(ffmpeg.rms_by_window, wav_path, windows))
         except Exception:  # noqa: BLE001
             logger.warning("Loudness analysis failed", exc_info=True)
 

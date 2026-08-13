@@ -4,7 +4,6 @@ The google-* client libraries are synchronous, so every call runs in a thread.
 """
 
 import asyncio
-import io
 import json
 import logging
 from collections.abc import Callable
