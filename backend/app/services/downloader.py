@@ -9,6 +9,7 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 
+import aiofiles
 import httpx
 
 from . import drive
@@ -63,9 +64,9 @@ async def _stream_to_file(
 
         dest.parent.mkdir(parents=True, exist_ok=True)
         written = 0
-        with dest.open("wb") as f:
+        async with aiofiles.open(dest, "wb") as f:
             async for chunk in response.aiter_bytes(1024 * 1024):
-                f.write(chunk)
+                await f.write(chunk)
                 written += len(chunk)
                 if on_progress and total:
                     on_progress(min(written / total * 100, 99.0))
