@@ -32,7 +32,9 @@ async def list_parts(job_id: str = "", db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{part_id}", response_model=PartOut)
-async def update_part(part_id: str, payload: PartUpdate, db: AsyncSession = Depends(get_db)):
+async def update_part(
+    part_id: str, payload: PartUpdate, db: AsyncSession = Depends(get_db)
+):
     """Rename a part. Changing `label` or `overlays` re-renders it."""
     part = await _get_part(part_id, db)
 
@@ -95,11 +97,14 @@ async def export_parts(payload: ExportRequest, db: AsyncSession = Depends(get_db
         payload.drive_folder_id if payload.mode == "drive" else payload.output_dir
     )
     started = 0
-    for part_id in payload.part_ids:
-        part = await db.get(Part, part_id)
-        if part and part.status == "ready":
-            asyncio.create_task(export_one_part(part_id, payload.mode, destination))
-            started += 1
+    if payload.part_ids:
+        stmt = select(Part).where(Part.id.in_(payload.part_ids))
+        result = await db.execute(stmt)
+        parts = result.scalars().all()
+        for part in parts:
+            if part.status == "ready":
+                asyncio.create_task(export_one_part(part.id, payload.mode, destination))
+                started += 1
     if started == 0:
         raise HTTPException(400, "No rendered parts to export")
     return {"started": started}
