@@ -4,6 +4,8 @@ import logging
 import tempfile
 from pathlib import Path
 
+from sqlalchemy import select
+
 from ..config import get_settings
 from ..database import SessionLocal
 from ..models import Job, Part, Video
@@ -336,14 +338,18 @@ async def run_split_job(job_id: str) -> None:
     if options.mode != "best" and options.ai_titles and transcript_segments:
         await _update_job(job_id, 10, "Naming parts with AI")
         async with SessionLocal() as db:
-            parts = [await db.get(Part, pid) for pid in part_ids]
-            texts = [p.transcript for p in parts]
+            result = await db.execute(select(Part).where(Part.id.in_(part_ids)))
+            parts_map = {p.id: p for p in result.scalars().all()}
+            texts = [parts_map[pid].transcript for pid in part_ids]
+
         titles = await ai.generate_titles(texts)
+
         async with SessionLocal() as db:
+            result = await db.execute(select(Part).where(Part.id.in_(part_ids)))
+            parts_map = {p.id: p for p in result.scalars().all()}
             for pid, title in zip(part_ids, titles):
-                if title:
-                    part = await db.get(Part, pid)
-                    part.title = title
+                if title and pid in parts_map:
+                    parts_map[pid].title = title
             await db.commit()
 
     render_from = 30.0 if options.mode == "best" else 12.0
