@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 
 from . import drive
+from ..config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,13 @@ def validate_local_dir(raw: str) -> Path:
     """Resolve and create the user's chosen output folder."""
     if not raw.strip():
         raise ExportError("No output folder set")
-    path = Path(raw.strip()).expanduser()
+
+    path = Path(raw.strip()).expanduser().resolve()
+    base_dir = get_settings().default_output_dir.resolve()
+
+    if not path.is_relative_to(base_dir):
+        raise ExportError("Output folder must be within the allowed base directory")
+
     try:
         path.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
