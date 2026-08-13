@@ -93,7 +93,9 @@ async def rate_clips(candidates: list[str]) -> list[dict]:
                 GROQ_URL, headers={"Authorization": f"Bearer {key}"}, json=payload
             )
         if response.status_code != 200:
-            logger.warning("Groq rating error %s: %s", response.status_code, response.text[:300])
+            logger.warning(
+                "Groq rating error %s: %s", response.status_code, response.text[:300]
+            )
             return []
         content = response.json()["choices"][0]["message"]["content"]
         clips = json.loads(content).get("clips", [])
@@ -150,7 +152,9 @@ async def generate_titles(transcripts: list[str]) -> list[str]:
                 json=payload,
             )
         if response.status_code != 200:
-            logger.warning("Groq error %s: %s", response.status_code, response.text[:300])
+            logger.warning(
+                "Groq error %s: %s", response.status_code, response.text[:300]
+            )
             return blanks
         content = response.json()["choices"][0]["message"]["content"]
         titles = json.loads(content).get("titles", [])

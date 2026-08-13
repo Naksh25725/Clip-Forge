@@ -82,7 +82,9 @@ async def _download_public_drive(
     params = {"id": file_id, "export": "download", "confirm": "t"}
     async with httpx.AsyncClient(follow_redirects=True, timeout=None) as client:
         try:
-            return await _stream_to_file(client, "GET", url, dest, on_progress, params=params)
+            return await _stream_to_file(
+                client, "GET", url, dest, on_progress, params=params
+            )
         except DownloadError as exc:
             if str(exc) != "html":
                 raise
@@ -102,7 +104,10 @@ async def _download_public_drive(
 
 
 async def download(
-    url: str, dest_dir: Path, video_id: str, on_progress: Callable[[float], None] | None = None
+    url: str,
+    dest_dir: Path,
+    video_id: str,
+    on_progress: Callable[[float], None] | None = None,
 ) -> tuple[Path, str]:
     """Fetch `url` into `dest_dir`. Returns (path, display name)."""
     url = url.strip()
@@ -121,8 +126,10 @@ async def download(
                 dest = dest_dir / f"{video_id}{suffix}"
                 await drive.download_file(file_id, dest, on_progress)
                 return dest, name
-            except Exception:  # noqa: BLE001 — fall back to the public path
-                logger.warning("Drive API download failed; trying public link", exc_info=True)
+            except drive.DRIVE_EXCEPTIONS:  # fall back to the public path
+                logger.warning(
+                    "Drive API download failed; trying public link", exc_info=True
+                )
 
         dest = dest_dir / f"{video_id}.mp4"
         suggested = await _download_public_drive(file_id, dest, on_progress)

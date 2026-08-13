@@ -83,7 +83,9 @@ async def _worker_loop(index: int) -> None:
 
 async def start_workers() -> None:
     async with SessionLocal() as db:
-        result = await db.execute(select(Job).where(Job.status.in_(["queued", "running"])))
+        result = await db.execute(
+            select(Job).where(Job.status.in_(["queued", "running"]))
+        )
         for job in result.scalars():
             job.status = "queued"
             await _queue.put(job.id)

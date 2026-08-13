@@ -85,7 +85,9 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)) -> None:
     job = await db.get(Job, job_id)
     if not job:
         raise HTTPException(404, "Job not found")
-    result = await db.execute(select(Job).where(Job.id == job_id).options(selectinload(Job.parts)))
+    result = await db.execute(
+        select(Job).where(Job.id == job_id).options(selectinload(Job.parts))
+    )
     full = result.scalar_one()
     for part in full.parts:
         if part.path:

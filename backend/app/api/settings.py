@@ -37,7 +37,9 @@ async def get_app_settings(db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/settings", response_model=AppSettings)
-async def update_app_settings(payload: AppSettingsUpdate, db: AsyncSession = Depends(get_db)):
+async def update_app_settings(
+    payload: AppSettingsUpdate, db: AsyncSession = Depends(get_db)
+):
     for key, value in payload.model_dump(exclude_none=True).items():
         row = await db.get(Setting, key)
         if row is None:

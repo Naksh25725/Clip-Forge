@@ -20,16 +20,54 @@ from . import ai, ffmpeg
 logger = logging.getLogger(__name__)
 
 HOOK_PATTERNS = [
-    r"\bwhat if\b", r"\bimagine\b", r"\bhere'?s (?:why|how|the)\b", r"\bsecret\b",
-    r"\bnobody\b", r"\byou won'?t believe\b", r"\bthe (?:biggest|best|worst)\b",
-    r"\bmistake\b", r"\bnever\b", r"\balways\b", r"\bwhy\b", r"\bhow to\b",
-    r"\btop \d+\b", r"\bthe truth\b", r"\bactually\b", r"\bturns out\b", r"\?",
+    r"\bwhat if\b",
+    r"\bimagine\b",
+    r"\bhere'?s (?:why|how|the)\b",
+    r"\bsecret\b",
+    r"\bnobody\b",
+    r"\byou won'?t believe\b",
+    r"\bthe (?:biggest|best|worst)\b",
+    r"\bmistake\b",
+    r"\bnever\b",
+    r"\balways\b",
+    r"\bwhy\b",
+    r"\bhow to\b",
+    r"\btop \d+\b",
+    r"\bthe truth\b",
+    r"\bactually\b",
+    r"\bturns out\b",
+    r"\?",
 ]
 EMOTION_WORDS = {
-    "amazing", "incredible", "insane", "crazy", "love", "hate", "wow", "shocking",
-    "unbelievable", "terrifying", "hilarious", "beautiful", "awesome", "horrible",
-    "excited", "afraid", "angry", "happy", "sad", "huge", "massive", "wild",
-    "perfect", "worst", "best", "epic", "brutal", "stunning", "obsessed",
+    "amazing",
+    "incredible",
+    "insane",
+    "crazy",
+    "love",
+    "hate",
+    "wow",
+    "shocking",
+    "unbelievable",
+    "terrifying",
+    "hilarious",
+    "beautiful",
+    "awesome",
+    "horrible",
+    "excited",
+    "afraid",
+    "angry",
+    "happy",
+    "sad",
+    "huge",
+    "massive",
+    "wild",
+    "perfect",
+    "worst",
+    "best",
+    "epic",
+    "brutal",
+    "stunning",
+    "obsessed",
 }
 
 # Longest transcript we hand to the LLM in one request.
@@ -94,7 +132,11 @@ def sentence_units(segments: list) -> list[_Unit]:
         total_chars = sum(len(s) for s in sentences)
         cursor = seg.start
         for sentence in sentences:
-            share = span * (len(sentence) / total_chars) if total_chars else span / len(sentences)
+            share = (
+                span * (len(sentence) / total_chars)
+                if total_chars
+                else span / len(sentences)
+            )
             end = min(cursor + share, seg.end)
             units.append(_Unit(cursor, end, sentence))
             cursor = end
@@ -118,7 +160,9 @@ def build_candidates(
         windows: list[Candidate] = []
         start = 0.0
         while start < duration - 2.0:
-            windows.append(Candidate(start=start, end=min(start + target_length, duration)))
+            windows.append(
+                Candidate(start=start, end=min(start + target_length, duration))
+            )
             start += stride
         return windows or [Candidate(start=0.0, end=duration)]
 
@@ -215,8 +259,10 @@ async def score_candidates(
         # Pre-rank with heuristics so the LLM only sees the strongest candidates.
         shortlist = sorted(
             range(len(candidates)),
-            key=lambda i: _text_scores(candidates[i].text, candidates[i].duration)[0]
-            + energy[i] * 0.3,
+            key=lambda i: (
+                _text_scores(candidates[i].text, candidates[i].duration)[0]
+                + energy[i] * 0.3
+            ),
             reverse=True,
         )[:MAX_AI_CANDIDATES]
         shortlist.sort()
@@ -261,14 +307,17 @@ async def score_candidates(
     return candidates
 
 
-def pick_best(candidates: list[Candidate], count: int, min_gap: float = 1.0) -> list[Candidate]:
+def pick_best(
+    candidates: list[Candidate], count: int, min_gap: float = 1.0
+) -> list[Candidate]:
     """Highest-scoring candidates that don't overlap each other."""
     chosen: list[Candidate] = []
     for candidate in sorted(candidates, key=lambda c: c.score, reverse=True):
         if len(chosen) >= count:
             break
         if any(
-            candidate.start < picked.end + min_gap and picked.start < candidate.end + min_gap
+            candidate.start < picked.end + min_gap
+            and picked.start < candidate.end + min_gap
             for picked in chosen
         ):
             continue

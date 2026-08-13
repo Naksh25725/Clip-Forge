@@ -24,8 +24,10 @@ async def lifespan(app: FastAPI):
     await init_db()
     await queue.start_workers()
     if not resolve_font():
-        logger.warning("No TrueType font found — part labels will not be burned in. "
-                       "Set CLIPFORGE_FONT_FILE to a .ttf path.")
+        logger.warning(
+            "No TrueType font found — part labels will not be burned in. "
+            "Set CLIPFORGE_FONT_FILE to a .ttf path."
+        )
     logger.info("ClipForge ready — data dir: %s", settings.data_dir.resolve())
     yield
     await queue.stop_workers()

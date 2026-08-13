@@ -38,7 +38,9 @@ async def _get_model():
 
             settings = get_settings()
             compute = "int8" if settings.whisper_device == "cpu" else "float16"
-            logger.info("Loading whisper model %s (%s)", settings.whisper_model, compute)
+            logger.info(
+                "Loading whisper model %s (%s)", settings.whisper_model, compute
+            )
             _model = await asyncio.to_thread(
                 WhisperModel,
                 settings.whisper_model,
@@ -99,4 +101,6 @@ async def transcribe(
         return []
     model = await _get_model()
     lang = None if language in (None, "", "auto") else language
-    return await asyncio.to_thread(_transcribe_sync, model, str(path), lang, on_progress)
+    return await asyncio.to_thread(
+        _transcribe_sync, model, str(path), lang, on_progress
+    )

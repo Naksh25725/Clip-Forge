@@ -45,8 +45,14 @@ class VideoInfo:
 
 async def probe(path: Path) -> VideoInfo:
     stdout, _ = await _run(
-        "ffprobe", "-v", "error", "-print_format", "json",
-        "-show_format", "-show_streams", str(path),
+        "ffprobe",
+        "-v",
+        "error",
+        "-print_format",
+        "json",
+        "-show_format",
+        "-show_streams",
+        str(path),
         timeout=120,
     )
     data = json.loads(stdout)
@@ -154,7 +160,11 @@ def build_drawtext(
         "shadowy=2",
     ]
     if box:
-        parts += ["box=1", "boxcolor=black@0.45", f"boxborderw={max(font_size // 3, 8)}"]
+        parts += [
+            "box=1",
+            "boxcolor=black@0.45",
+            f"boxborderw={max(font_size // 3, 8)}",
+        ]
     return "drawtext=" + ":".join(parts)
 
 
@@ -270,8 +280,17 @@ async def render_part(
     text_filters = _overlay_filters(overlays or [], out_h)
 
     args: list[str] = [
-        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-        "-ss", f"{start:.3f}", "-to", f"{end:.3f}", "-i", str(src),
+        "ffmpeg",
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-ss",
+        f"{start:.3f}",
+        "-to",
+        f"{end:.3f}",
+        "-i",
+        str(src),
     ]
     if complex_graph:
         tail = sub_filters + text_filters
@@ -286,9 +305,20 @@ async def render_part(
         args += ["-c:v", "libvpx-vp9", "-crf", str(crf), "-b:v", "0", "-c:a", "libopus"]
     else:
         args += [
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", str(crf),
-            "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart",
-            "-pix_fmt", "yuv420p",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            str(crf),
+            "-c:a",
+            "aac",
+            "-b:a",
+            "160k",
+            "-movflags",
+            "+faststart",
+            "-pix_fmt",
+            "yuv420p",
         ]
     args.append(str(dst))
     await _run(*args, timeout=7200)
@@ -310,8 +340,19 @@ async def preview_frame(
 
     vf_chain, complex_graph = _geometry(aspect, reel_fill, "720")
     args: list[str] = [
-        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-        "-ss", f"{max(at, 0):.3f}", "-i", str(src), "-frames:v", "1", "-q:v", "4",
+        "ffmpeg",
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-ss",
+        f"{max(at, 0):.3f}",
+        "-i",
+        str(src),
+        "-frames:v",
+        "1",
+        "-q:v",
+        "4",
     ]
     if complex_graph:
         args += ["-filter_complex", f"{complex_graph}[vout]", "-map", "[vout]"]
@@ -333,12 +374,27 @@ async def preview_frame(
         return out.read_bytes()
 
 
-async def make_thumbnail(src: Path, dst: Path, at: float = 1.0, height: int = 400) -> None:
+async def make_thumbnail(
+    src: Path, dst: Path, at: float = 1.0, height: int = 400
+) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     await _run(
-        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-        "-ss", f"{max(at, 0):.3f}", "-i", str(src),
-        "-frames:v", "1", "-vf", f"scale=-2:{height}", "-q:v", "3", str(dst),
+        "ffmpeg",
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-ss",
+        f"{max(at, 0):.3f}",
+        "-i",
+        str(src),
+        "-frames:v",
+        "1",
+        "-vf",
+        f"scale=-2:{height}",
+        "-q:v",
+        "3",
+        str(dst),
         timeout=180,
     )
 
@@ -347,9 +403,21 @@ async def extract_audio_wav(src: Path, dst: Path) -> None:
     """16 kHz mono WAV — what faster-whisper ingests fastest."""
     dst.parent.mkdir(parents=True, exist_ok=True)
     await _run(
-        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-        "-i", str(src), "-vn", "-ac", "1", "-ar", "16000",
-        "-c:a", "pcm_s16le", str(dst),
+        "ffmpeg",
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        str(src),
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-c:a",
+        "pcm_s16le",
+        str(dst),
         timeout=3600,
     )
 
@@ -357,16 +425,20 @@ async def extract_audio_wav(src: Path, dst: Path) -> None:
 async def scene_change_times(src: Path, threshold: float = 0.35) -> list[float]:
     """Timestamps of visual cuts, in a single downscaled decode pass."""
     _, stderr = await _run(
-        "ffmpeg", "-hide_banner", "-i", str(src), "-an",
+        "ffmpeg",
+        "-hide_banner",
+        "-i",
+        str(src),
+        "-an",
         # Scaling down first makes the scene filter dramatically cheaper.
-        "-vf", f"scale=-2:180,select='gt(scene,{threshold})',showinfo",
-        "-f", "null", os.devnull,
+        "-vf",
+        f"scale=-2:180,select='gt(scene,{threshold})',showinfo",
+        "-f",
+        "null",
+        os.devnull,
         timeout=3600,
     )
-    return [
-        float(m.group(1))
-        for m in re.finditer(rb"pts_time:([\d.]+)", stderr)
-    ]
+    return [float(m.group(1)) for m in re.finditer(rb"pts_time:([\d.]+)", stderr)]
 
 
 def rms_by_window(wav_path: Path, windows: list[tuple[float, float]]) -> list[float]:

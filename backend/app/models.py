@@ -93,7 +93,9 @@ class Part(Base):
     viral_score: Mapped[float] = mapped_column(Float, default=0.0)
     viral_hook: Mapped[float] = mapped_column(Float, default=0.0)
     viral_reason: Mapped[str] = mapped_column(Text, default="")
-    viral_tier: Mapped[str] = mapped_column(String(16), default="")  # ai|heuristic|signal
+    viral_tier: Mapped[str] = mapped_column(
+        String(16), default=""
+    )  # ai|heuristic|signal
     # none | saving | saved | error
     export_status: Mapped[str] = mapped_column(String(16), default="none")
     export_target: Mapped[str] = mapped_column(Text, default="")

@@ -77,7 +77,9 @@ async def upload_video(file: UploadFile, db: AsyncSession = Depends(get_db)) -> 
         dest.unlink(missing_ok=True)  # don't leave partial uploads behind
         raise
 
-    video = Video(id=video_id, name=name, source="upload", path=str(dest), status="ready")
+    video = Video(
+        id=video_id, name=name, source="upload", path=str(dest), status="ready"
+    )
     db.add(video)
     await db.commit()
 
@@ -119,7 +121,9 @@ _progress: dict[str, float] = {}
 
 
 @router.post("/link", response_model=VideoOut, status_code=202)
-async def import_from_link(payload: LinkRequest, db: AsyncSession = Depends(get_db)) -> Video:
+async def import_from_link(
+    payload: LinkRequest, db: AsyncSession = Depends(get_db)
+) -> Video:
     """Start importing a Google Drive (or direct) video link in the background."""
     video_id = uuid.uuid4().hex
     video = Video(
@@ -138,7 +142,9 @@ async def import_from_link(payload: LinkRequest, db: AsyncSession = Depends(get_
 
 
 @router.post("/{video_id}/preview")
-async def preview(video_id: str, payload: PreviewRequest, db: AsyncSession = Depends(get_db)):
+async def preview(
+    video_id: str, payload: PreviewRequest, db: AsyncSession = Depends(get_db)
+):
     """A JPEG frame with the chosen aspect transform applied (no text —
     the frontend overlays draggable text on top). Cached per parameters."""
     video = await db.get(Video, video_id)
@@ -152,8 +158,10 @@ async def preview(video_id: str, payload: PreviewRequest, db: AsyncSession = Dep
     if not cache_path.exists():
         try:
             await ffmpeg.preview_frame(
-                Path(video.path), t,
-                aspect=payload.aspect, reel_fill=payload.reel_fill,
+                Path(video.path),
+                t,
+                aspect=payload.aspect,
+                reel_fill=payload.reel_fill,
                 dst=cache_path,
             )
         except ffmpeg.FFmpegError as exc:
