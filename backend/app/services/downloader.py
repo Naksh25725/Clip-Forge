@@ -4,8 +4,11 @@ Private Drive files work when the account is connected under Settings; public
 "anyone with the link" files download without any credentials at all.
 """
 
+import asyncio
+import ipaddress
 import logging
 import re
+import socket
 from collections.abc import Callable
 from pathlib import Path
 
@@ -38,6 +41,20 @@ def extract_drive_id(url: str) -> str | None:
 
 def is_drive_link(url: str) -> bool:
     return "drive.google.com" in url or "docs.google.com" in url
+
+
+async def _verify_request(request: httpx.Request) -> None:
+    hostname = request.url.host
+    try:
+        loop = asyncio.get_running_loop()
+        info = await loop.getaddrinfo(hostname, None)
+        for res in info:
+            ip_str = res[4][0]
+            ip = ipaddress.ip_address(ip_str)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified:
+                raise DownloadError(f"Access to restricted IP is denied")
+    except socket.gaierror:
+        raise DownloadError(f"Could not resolve hostname {hostname}")
 
 
 async def _stream_to_file(
@@ -137,6 +154,8 @@ async def download(
     # Any other direct link
     name = Path(httpx.URL(url).path).name or "video.mp4"
     dest = dest_dir / f"{video_id}{Path(name).suffix or '.mp4'}"
-    async with httpx.AsyncClient(follow_redirects=True, timeout=None) as client:
+    async with httpx.AsyncClient(
+        follow_redirects=True, timeout=None, event_hooks={"request": [_verify_request]}
+    ) as client:
         suggested = await _stream_to_file(client, "GET", url, dest, on_progress)
     return dest, suggested or name
