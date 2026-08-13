@@ -181,6 +181,68 @@ def _text_scores(text: str, duration: float) -> tuple[float, float, str]:
     return engagement, hook, reason
 
 
+async def _apply_ai_scores(
+    candidates: list[Candidate],
+    energy: list[float],
+    motion: list[float],
+) -> None:
+    """Pre-rank with heuristics so the LLM only sees the strongest candidates, then assign AI scores."""
+    shortlist = sorted(
+        range(len(candidates)),
+        key=lambda i: _text_scores(candidates[i].text, candidates[i].duration)[0]
+        + energy[i] * 0.3,
+        reverse=True,
+    )[:MAX_AI_CANDIDATES]
+    shortlist.sort()
+
+    ai_results = await ai.rate_clips([candidates[i].text for i in shortlist])
+    if not ai_results:
+        return
+
+    for slot, idx in enumerate(shortlist):
+        if slot >= len(ai_results):
+            break
+        result = ai_results[slot]
+        candidate = candidates[idx]
+        signal = energy[idx] * 0.6 + motion[idx] * 0.4
+        candidate.score = result["score"] * 0.75 + signal * 0.25
+        candidate.hook = result["hook"]
+        candidate.reason = result["reason"] or "Rated by AI."
+        candidate.title = result["title"]
+        candidate.tier = "ai"
+        candidate.parts = {
+            "ai_score": round(result["score"], 1),
+            "energy": round(energy[idx], 1),
+            "motion": round(motion[idx], 1),
+        }
+
+
+def _apply_heuristic_scores(
+    candidates: list[Candidate],
+    energy: list[float],
+    motion: list[float],
+) -> None:
+    """Fallback to heuristic scoring for candidates not rated by AI."""
+    for i, candidate in enumerate(candidates):
+        if candidate.tier == "ai":
+            continue
+        if candidate.text.strip():
+            engagement, hook, why = _text_scores(candidate.text, candidate.duration)
+            candidate.score = engagement * 0.70 + energy[i] * 0.20 + motion[i] * 0.10
+            candidate.hook = hook
+            candidate.tier = "heuristic"
+            candidate.reason = f"{why} Energy {energy[i]:.0f}/100."
+        else:
+            candidate.score = energy[i] * 0.65 + motion[i] * 0.35
+            candidate.hook = energy[i]
+            candidate.tier = "signal"
+            candidate.reason = (
+                f"Scored on audio energy ({energy[i]:.0f}/100) and visual activity "
+                f"({motion[i]:.0f}/100) — no transcript available."
+            )
+        candidate.parts = {"energy": round(energy[i], 1), "motion": round(motion[i], 1)}
+
+
 async def score_candidates(
     candidates: list[Candidate],
     wav_path: Path | None,
@@ -210,53 +272,10 @@ async def score_candidates(
 
     has_text = any(c.text.strip() for c in candidates)
 
-    ai_results: list[dict] = []
     if use_ai and has_text:
-        # Pre-rank with heuristics so the LLM only sees the strongest candidates.
-        shortlist = sorted(
-            range(len(candidates)),
-            key=lambda i: _text_scores(candidates[i].text, candidates[i].duration)[0]
-            + energy[i] * 0.3,
-            reverse=True,
-        )[:MAX_AI_CANDIDATES]
-        shortlist.sort()
-        ai_results = await ai.rate_clips([candidates[i].text for i in shortlist])
-        if ai_results:
-            for slot, idx in enumerate(shortlist):
-                if slot >= len(ai_results):
-                    break
-                result = ai_results[slot]
-                candidate = candidates[idx]
-                signal = energy[idx] * 0.6 + motion[idx] * 0.4
-                candidate.score = result["score"] * 0.75 + signal * 0.25
-                candidate.hook = result["hook"]
-                candidate.reason = result["reason"] or "Rated by AI."
-                candidate.title = result["title"]
-                candidate.tier = "ai"
-                candidate.parts = {
-                    "ai_score": round(result["score"], 1),
-                    "energy": round(energy[idx], 1),
-                    "motion": round(motion[idx], 1),
-                }
+        await _apply_ai_scores(candidates, energy, motion)
 
-    for i, candidate in enumerate(candidates):
-        if candidate.tier == "ai":
-            continue
-        if candidate.text.strip():
-            engagement, hook, why = _text_scores(candidate.text, candidate.duration)
-            candidate.score = engagement * 0.70 + energy[i] * 0.20 + motion[i] * 0.10
-            candidate.hook = hook
-            candidate.tier = "heuristic"
-            candidate.reason = f"{why} Energy {energy[i]:.0f}/100."
-        else:
-            candidate.score = energy[i] * 0.65 + motion[i] * 0.35
-            candidate.hook = energy[i]
-            candidate.tier = "signal"
-            candidate.reason = (
-                f"Scored on audio energy ({energy[i]:.0f}/100) and visual activity "
-                f"({motion[i]:.0f}/100) — no transcript available."
-            )
-        candidate.parts = {"energy": round(energy[i], 1), "motion": round(motion[i], 1)}
+    _apply_heuristic_scores(candidates, energy, motion)
 
     return candidates
 
